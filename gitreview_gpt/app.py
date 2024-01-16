@@ -32,7 +32,7 @@ def print_review_from_response_json(feedback_json):
         if feedback_json[file]:
             print(formatter.draw_box(file, feedback_json[file]))
         else:
-            print("No issues found in " + utils.get_bold_text(file))
+            print(f"No issues found in {utils.get_bold_text(file)}")
 
 
 def apply_review_to_file(
@@ -41,26 +41,26 @@ def apply_review_to_file(
     """
     Apply review to file
     """
-    if not utils.has_unstaged_changes(file_path):
-        if review_json:
-            apply_changes = False
-            if guided:
-                print(f"Apply changes to {utils.get_bold_text(file)}? (y/n)")
-                apply_changes = input().lower() == "y"
-            if not guided or apply_changes:
-                reviewer.apply_review(
-                    api_key,
-                    os.path.abspath(file_path),
-                    review_json,
-                    code_change_chunks,
-                    gpt_model,
-                )
-    else:
+    if utils.has_unstaged_changes(file_path):
         print(
             f"⚠️  There are unstaged changes in {utils.get_bold_text(file)}. "
             + "Please commit or stage them. "
             + "Applying review changes skipped for now."
         )
+
+    elif review_json:
+        apply_changes = False
+        if guided:
+            print(f"Apply changes to {utils.get_bold_text(file)}? (y/n)")
+            apply_changes = input().lower() == "y"
+        if not guided or apply_changes:
+            reviewer.apply_review(
+                api_key,
+                os.path.abspath(file_path),
+                review_json,
+                code_change_chunks,
+                gpt_model,
+            )
 
 
 def run():

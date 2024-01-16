@@ -68,16 +68,15 @@ def format_git_diff(
             # Extract the line numbers from the changes pattern
             pattern = r"@@ -(\d+),(\d+) \+(\d+),(\d+) @@"
             match = re.findall(pattern, code_change_chunk)
-            chunk_dividers = []
-            for m in match:
-                chunk_dividers.append(
-                    {
-                        "original_start_line": int(m[0]),
-                        "original_end_line": int(m[1]),
-                        "new_start_line": int(m[2]),
-                        "new_end_line": int(m[3]),
-                    }
-                )
+            chunk_dividers = [
+                {
+                    "original_start_line": int(m[0]),
+                    "original_end_line": int(m[1]),
+                    "new_start_line": int(m[2]),
+                    "new_end_line": int(m[3]),
+                }
+                for m in match
+            ]
             line_counter = -1 + chunk_dividers[0]["new_start_line"]
 
             chunk_formatted = ""
@@ -90,10 +89,7 @@ def format_git_diff(
                     code_chunk_formatted += line + "\n"
                     # Extract selection marker
                     parts = line.split("def", 1)
-                    if len(parts) > 1:
-                        optional_selection_marker = parts[1].strip()
-                    else:
-                        optional_selection_marker = ""
+                    optional_selection_marker = parts[1].strip() if len(parts) > 1 else ""
                     continue
                 if line.startswith("---"):
                     continue
@@ -102,12 +98,12 @@ def format_git_diff(
                 else:
                     line_counter += 1
 
-                new_line = str(line_counter) + " " + line + "\n"
+                new_line = f"{str(line_counter)} {line}" + "\n"
                 git_diff_formatted += new_line
                 chunk_formatted += new_line
 
                 if line.startswith("+"):
-                    code_chunk_formatted += str(line_counter) + " " + line[1:] + "\n"
+                    code_chunk_formatted += f"{str(line_counter)} {line[1:]}" + "\n"
                 else:
                     code_chunk_formatted += new_line
 
@@ -139,8 +135,7 @@ def format_git_diff(
 # Extract markdown code blocks from text
 def extract_content_from_markdown_code_block(markdown_code_block) -> str:
     pattern = r"```(?:[a-zA-Z0-9]+)?\n(.*?)```"
-    match = re.search(pattern, markdown_code_block, re.DOTALL)
-    if match:
+    if match := re.search(pattern, markdown_code_block, re.DOTALL):
         return match.group(1).strip()
     else:
         return markdown_code_block.strip()
@@ -151,7 +146,7 @@ def extract_content_from_multiple_markdown_code_blocks(markdown_text) -> list:
     pattern = r"```(?:[a-zA-Z0-9]+)?\n(.*?)```"
     matches = re.findall(pattern, markdown_text, re.DOTALL)
     extracted_content = [match.strip() for match in matches]
-    if len(extracted_content) == 0:
+    if not extracted_content:
         extracted_content = [markdown_text.strip()]
     return extracted_content
 
@@ -193,7 +188,7 @@ def draw_box(filename, feedback_lines):
     max_length = os.get_terminal_size()[0] - 2
     border = "╭" + "─" * (max_length) + "╮"
     bottom_border = "│" + "─" * (max_length) + "│"
-    filename_line = "│ " + filename.ljust(max_length - 1) + "│"
+    filename_line = f"│ {filename.ljust(max_length - 1)}│"
     result = [border, filename_line, bottom_border]
 
     for entry in feedback_lines:
@@ -205,11 +200,13 @@ def draw_box(filename, feedback_lines):
                 line_string += f" {feedback_lines[entry]['suggestion']}"
         if len(line_string) > max_length - 2:
             wrapped_lines = textwrap.wrap(line_string, width=max_length - 4)
-            result.append("│ " + wrapped_lines[0].ljust(max_length + 7) + " │")
-            for wrapped_line in wrapped_lines[1:]:
-                result.append("│   " + wrapped_line.ljust(max_length - 4) + " │")
+            result.append(f"│ {wrapped_lines[0].ljust(max_length + 7)} │")
+            result.extend(
+                f"│   {wrapped_line.ljust(max_length - 4)} │"
+                for wrapped_line in wrapped_lines[1:]
+            )
         else:
-            result.append("│ " + line_string.ljust(max_length + 7) + " │")
+            result.append(f"│ {line_string.ljust(max_length + 7)} │")
 
     result.append("╰" + "─" * (max_length) + "╯")
     return "\n".join(result)
@@ -242,9 +239,10 @@ def parse_apply_review_per_code_hunk(code_changes, review_json, line_number_stac
             line_number = line_number_stack.pop()
 
         if review_per_chunk:
-            suggestions = {}
-            for line in review_per_chunk:
-                suggestions[line] = review_per_chunk[line]["feedback"]
+            suggestions = {
+                line: review_per_chunk[line]["feedback"]
+                for line in review_per_chunk
+            }
             hunk_review_payload.append(
                 {"code": code_change_hunk.code, "suggestions": suggestions}
             )

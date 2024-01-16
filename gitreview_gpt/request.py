@@ -16,15 +16,14 @@ def send_request(api_key, payload, spinner_text):
         )
         response.raise_for_status()
         json_response = response.json()
-        review_summary = (
+        return (
             json_response["choices"][0]["message"]["content"]
             .encode()
             .decode("unicode_escape")
         )
-        return review_summary
     except (KeyError, requests.exceptions.RequestException) as e:
         print("💥 An error occurred while requesting a review.")
-        print(str(e))
+        print(e)
         return None
     finally:
         spinner.stop()
