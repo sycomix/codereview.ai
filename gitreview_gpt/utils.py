@@ -4,20 +4,17 @@ import tiktoken
 
 
 def parse_string_to_int(input_string):
-    if "-" in input_string:
-        # If the input_string contains a range
-        start, _ = input_string.split("-")
-        return int(start)
-    else:
+    if "-" not in input_string:
         # If the input_string contains only a single number
         return int(input_string)
+    # If the input_string contains a range
+    start, _ = input_string.split("-")
+    return int(start)
 
 
 def repair_truncated_json(json_str):
     try:
-        # Attempt to load the JSON
-        json_data = json.loads(json_str)
-        return json_data
+        return json.loads(json_str)
     except json.JSONDecodeError:
         # If loading fails, try to find the last valid JSON fragment
         last_valid_index = 0
@@ -64,10 +61,7 @@ def get_programming_language(filename):
     # Extract file extension from the filename
     file_extension = filename[filename.rfind(".") :].lower()
 
-    if file_extension in language_mapping:
-        return language_mapping[file_extension]
-    else:
-        return "Unknown"
+    return language_mapping.get(file_extension, "Unknown")
 
 
 def get_file_blacklist():
@@ -127,4 +121,4 @@ def override_lines_in_file(file_path, lines_dict):
 
             file.writelines(existing_lines)
     except Exception as e:
-        print("An error occurred:", str(e))
+        print("An error occurred:", e)

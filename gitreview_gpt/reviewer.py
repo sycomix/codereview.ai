@@ -94,11 +94,10 @@ def apply_review(
                 # initialize reviewed code for applying code changes later a tonce
                 reviewed_code = []
 
-                # create line number stack for  merging code chunk with line numbers
-                line_number_stack = []
-                for line_number in reversed(review_json.keys()):
-                    line_number_stack.append(utils.parse_string_to_int(line_number))
-
+                line_number_stack = [
+                    utils.parse_string_to_int(line_number)
+                    for line_number in reversed(review_json.keys())
+                ]
                 code_chunks_to_review = []
 
                 # prompt offset tokens
@@ -122,15 +121,11 @@ def apply_review(
                     if not line_number_stack:
                         break
 
-                    # merge code chunk with suggestions by line numbers
-                    chunk_payload = formatter.parse_apply_review_per_code_hunk(
+                    if chunk_payload := formatter.parse_apply_review_per_code_hunk(
                         code_chunk,
                         review_json,
                         line_number_stack,
-                    )
-
-                    # there are review suggestions in that code chunk
-                    if chunk_payload:
+                    ):
                         for chunk in chunk_payload:
                             chunk_tokens = (
                                 utils.count_tokens(json.dumps(chunk)) + prompt_tokens
@@ -139,11 +134,6 @@ def apply_review(
                             # add chunk to code chunks to review
                             if chunk_tokens <= gpt_model.value / 2:
                                 code_chunks_to_review.append(chunk)
-                            else:
-                                # code chunk tokens are greater than threshold
-                                # skip since results are not reliable
-                                pass
-
                 if code_chunks_to_review:
                     code_chunk_count = code_chunks_to_review.__len__()
                     for index, chunk in enumerate(code_chunks_to_review, start=1):
@@ -173,8 +163,6 @@ def apply_review(
                     f"Consider using the {utils.get_bold_text('--gpt4')} flag."
                 )
 
-            # tokens for file content and review suggestions are less than threshold
-            # send request for file content and review suggestions
             else:
                 max_completions_tokens = gpt_model.value - tokens
                 reviewed_git_diff = request.send_request(
